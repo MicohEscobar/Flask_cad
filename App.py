@@ -2,7 +2,9 @@ from flask import Flask, request, jsonify, render_template
 from predict import predict_image  # Assuming you have a predict.py file with the predict_image function
 import os
 from werkzeug.utils import secure_filename
-
+import tensorflow as tf
+import cv2
+import numpy as np
 
 app = Flask(__name__)
 
@@ -21,6 +23,15 @@ def create_uploads_folder():
     else:
         print(f"Folder already exists: {uploads_folder}")
 
+# Load the TensorFlow Lite model
+model_file_path = os.path.join('model', 'converted_model.tflite')
+interpreter = tf.lite.Interpreter(model_path=model_file_path)
+interpreter.allocate_tensors()
+
+# Get input and output details
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
+
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -30,9 +41,6 @@ def predict():
     try:
         # Create the 'uploads' folder if it doesn't exist
         create_uploads_folder()
-
-        # Check the content of the 'uploads' folder
-        print(f"Content of 'uploads' folder: {os.listdir(app.config['UPLOAD_FOLDER'])}")
 
         # Check if the post request has the file part
         if 'image' not in request.files:
@@ -60,6 +68,10 @@ def predict():
 
             # Return the prediction results
             return jsonify({'result': result})
+        
+            # Store the prediction result in the session
+            session['predictions'] = session.get('predictions', []) + [{'file_path': file_path, 'result': result}]
+
 
         else:
             return jsonify({'error': 'Invalid file format'})

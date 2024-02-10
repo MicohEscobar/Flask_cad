@@ -40,7 +40,17 @@ def predict_image(image_file):
         interpreter.invoke()
         output_data = interpreter.get_tensor(interpreter.get_output_details()[0]['index'])
 
-        return output_data.tolist()
+        # Extract the probability score
+        probability = output_data[0][0]
+
+        # Set a threshold for classification (you can adjust this value based on your requirements)
+        threshold = 0.5
+
+        # Determine the predicted class based on the threshold
+        predicted_class = "Normal" if probability > threshold else "Pneumonia"
+
+        return predicted_class
 
     except Exception as e:
         raise RuntimeError(f"Error during prediction: {str(e)}")
+
